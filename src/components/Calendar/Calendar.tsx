@@ -1,9 +1,24 @@
-import React from 'react';
+import React from "react";
 
-import { checkDateIsEqual, checkIsToday } from '../../utils/helpers/date';
-import { useCalendar } from './hooks/useCalendar';
-
-import './Calendar.css';
+import {
+  checkDateIsEqual,
+  checkIsToday,
+  createMonth,
+  createDate,
+  getYearsInterval,
+  getMonthesNames,
+  getWeekDaysNames,
+  getMonthNumberOfDays,
+  getDays,
+  isSameDate,
+  getMonthMap,
+  getShortWeekDayMap,
+} from "../../utils/helpers/date/utillsCalendar";
+// import { useCalendar } from "./hooks/useCalendar";
+import { useState, useMemo } from "react";
+import st from "./Calendar.module.scss";
+import { useReducer } from "react";
+import { CalendarDay } from "./CalendarDay";
 
 interface CalendarProps {
   locale?: string;
@@ -11,146 +26,160 @@ interface CalendarProps {
   selectDate: (date: Date) => void;
   firstWeekDayNumber?: number;
 }
+type Action = {
+  type: string;
+  data: any;
+};
+type State = {
+  selected?: Date;
+};
+const DAYS_IN_WEEK = 7;
+const weeksToRender = 6;
+const daysToRender = 7;
 
-export const Calendar: React.FC<CalendarProps> = ({
-  locale = 'default',
+export const Calendar = ({
+  locale = "default",
   selectedDate: date,
   selectDate,
-  firstWeekDayNumber = 2
-}) => {
-  const { functions, state } = useCalendar({
-    locale,
-    selectedDate: date,
-    firstWeekDayNumber
+  firstWeekDayNumber = 2,
+}: CalendarProps) => {
+  // const { functions, state } = useCalendar({
+  //   locale,
+  //   selectedDate: date,
+  //   firstWeekDayNumber,
+  // });
+  // const [mode, setMode] = useState<"days" | "monthes" | "years">("days");
+  const [selectedDay, setSelectedDay] = useState(createDate({ date }));
+  const [selectedMonth, setSelectedMonth] = useState(
+    createMonth({
+      date: new Date(selectedDay.year, selectedDay.monthIndex),
+      locale,
+    })
+  );
+  const [selectedYear, setSelectedYear] = useState(selectedDay.year);
+  const [selectedYearsInterval, setSelectedYearsInterval] = useState(
+    getYearsInterval(selectedDay.year)
+  );
+  // const [panelMonth, setPanelMonth] = useState(false);
+
+  const monthesNames = useMemo(() => getMonthesNames(locale), []);
+  const weekDaysNames = useMemo(
+    () => getWeekDaysNames(firstWeekDayNumber, locale),
+    []
+  );
+
+  function calendarReducer(state: State, action: Action) {
+    console.log(`dispatched: ${action.data}`);
+
+    if (action.type === "updateSelection") {
+      return { ...state, selected: action.data };
+    }
+
+    return state;
+  }
+  // function Calendar() {
+  //   // const [date, setDate] = useState(() => new Date());
+  //   const [selectedDate, setSelectedDay] = useState(new Date());
+  const [mode, setMode] = useState<"days" | "month" | "year">("days");
+  const [panelYear, setPanelYear] = useState(() => date.getFullYear());
+  const [panelMonth, setPanelMonth] = useState(() => date.getMonth());
+
+  // const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  const [state, dispatch] = useReducer(calendarReducer, {
+    selected: undefined,
   });
 
+  // const nextYear = () => {
+  //   setPanelYear(panelYear + 1);
+  // };
+  // const prevYear = () => {
+  //   setPanelYear(panelYear - 1);
+  // };
+  // const nextMonth = () => {
+  //   if (panelMonth === 11) {
+  //     setPanelMonth(0);
+  //     setPanelYear(panelYear + 1);
+  //   } else {
+  //     setPanelMonth(panelMonth + 1);
+  //   }
+  // };
+  // const prevMonth = () => {
+  //   if (panelMonth === 0) {
+  //     setPanelMonth(11);
+  //     setPanelYear(panelYear - 1);
+  //   } else {
+  //     setPanelMonth(panelMonth - 1);
+  //   }
+  // };
+  const dayCards = getDays(panelMonth, panelYear)
+    .slice(0, weeksToRender * daysToRender)
+    .map((day) => {
+      const { date } = day;
+      const uid = date.toDateString();
+      const isNotCurrentMonth = day.type !== "current";
+
+      return (
+        <CalendarDay
+          key={uid}
+          date={date}
+          isSelected={!!state.selected && isSameDate(state.selected, date)}
+          dispatch={dispatch}
+          isNotCurrentMonth={isNotCurrentMonth}
+        />
+      );
+    });
+  // const years
+
   return (
-    <div className='calendar'>
-      <div className='calendar__header'>
-        <div
-          aria-hidden
-          className='calendar__header__arrow__left'
-          onClick={() => functions.onClickArrow('left')}
-        />
-        {state.mode === 'days' && (
-          <div aria-hidden onClick={() => functions.setMode('monthes')}>
-            {state.monthesNames[state.selectedMonth.monthIndex].month} {state.selectedYear}
+    <div className={st.calendar}>
+      <div className={st.containerPanel}>
+        {/* <div className={st.prev} onClick={prevYear}>
+            <Icon name="arrow_prev" />
           </div>
-        )}
-        {state.mode === 'monthes' && (
-          <div aria-hidden onClick={() => functions.setMode('years')}>
-            {state.selectedYear}
+          <div className={st.prev} onClick={prevMonth}>
+            <Icon name="arrow_prev" />
+          </div> */}
+        <div className={st.panelDate}>
+          <div className={st.panelMonth}>
+            {getMonthMap("en")["en"][panelMonth]}
           </div>
-        )}
-        {state.mode === 'years' && (
-          <div>
-            {state.selectedYearsInterval[0]} -{' '}
-            {state.selectedYearsInterval[state.selectedYearsInterval.length - 1]}
+
+          <div className={st.dropDown}>
+            {getMonthMap("ru")["ru"].map((month, idx) => (
+              <div
+                key={idx}
+                // onClick={handleOpenMonth}
+                // className={st.panelWeek}
+                //  { style=={{active= idx === highlightedIndex,
+                //   onMouseEnter: () => setHighlightedIndex(idx)}}
+              >
+                {month}
+              </div>
+            ))}
           </div>
-        )}
-        <div
-          aria-hidden
-          className='calendar__header__arrow__right'
-          onClick={() => functions.onClickArrow('right')}
-        />
+
+          <div className={st.year}>{panelYear}</div>
+          <div className={st.dropDown}>1233</div>
+        </div>
+
+        {/* <div className={st.next} onClick={nextMonth}>
+            <Icon name="arrow_next" />
+          </div>
+          <div className={st.next} onClick={nextYear}>
+            <Icon name="arrow_next" />
+          </div> */}
       </div>
-      <div className='calendar__body'>
-        {state.mode === 'days' && (
-          <>
-            <div className='calendar__week__names'>
-              {state.weekDaysNames.map((weekDaysName) => (
-                <div key={weekDaysName.dayShort}>{weekDaysName.dayShort}</div>
-              ))}
-            </div>
-            <div className='calendar__days'>
-              {state.calendarDays.map((day) => {
-                const isToday = checkIsToday(day.date);
-                const isSelectedDay = checkDateIsEqual(day.date, state.selectedDay.date);
-                const isAdditionalDay = day.monthIndex !== state.selectedMonth.monthIndex;
-
-                return (
-                  <div
-                    key={`${day.dayNumber}-${day.monthIndex}`}
-                    aria-hidden
-                    onClick={() => {
-                      functions.setSelectedDay(day);
-                      selectDate(day.date);
-                    }}
-                    className={[
-                      'calendar__day',
-                      isToday ? 'calendar__today__item' : '',
-                      isSelectedDay ? 'calendar__selected__item' : '',
-                      isAdditionalDay ? 'calendar__additional__day' : ''
-                    ].join(' ')}
-                  >
-                    {day.dayNumber}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {state.mode === 'monthes' && (
-          <div className='calendar__pick__items__container'>
-            {state.monthesNames.map((monthesName) => {
-              const isCurrentMonth =
-                new Date().getMonth() === monthesName.monthIndex &&
-                state.selectedYear === new Date().getFullYear();
-              const isSelectedMonth = monthesName.monthIndex === state.selectedMonth.monthIndex;
-
-              return (
-                <div
-                  key={monthesName.month}
-                  aria-hidden
-                  onClick={() => {
-                    functions.setSelectedMonthByIndex(monthesName.monthIndex);
-                    functions.setMode('days');
-                  }}
-                  className={[
-                    'calendar__pick__item',
-                    isSelectedMonth ? 'calendar__selected__item' : '',
-                    isCurrentMonth ? 'calendar__today__item' : ''
-                  ].join(' ')}
-                >
-                  {monthesName.monthShort}
-                </div>
-              );
-            })}
+      <div className={st.containerWeek}>
+        {getShortWeekDayMap("ru")["ru"].map((weekDay, idx) => (
+          <div key={idx} className={st.panelWeek}>
+            {weekDay}
           </div>
-        )}
-
-        {state.mode === 'years' && (
-          <div className='calendar__pick__items__container'>
-            <div className='calendar__unchoosable__year'>{state.selectedYearsInterval[0] - 1}</div>
-            {state.selectedYearsInterval.map((year) => {
-              const isCurrentYear = new Date().getFullYear() === year;
-              const isSelectedYear = year === state.selectedYear;
-
-              return (
-                <div
-                  key={year}
-                  aria-hidden
-                  onClick={() => {
-                    functions.setSelectedYear(year);
-                    functions.setMode('monthes');
-                  }}
-                  className={[
-                    'calendar__pick__item',
-                    isCurrentYear ? 'calendar__today__item' : '',
-                    isSelectedYear ? 'calendar__selected__item' : ''
-                  ].join(' ')}
-                >
-                  {year}
-                </div>
-              );
-            })}
-            <div className='calendar__unchoosable__year'>
-              {state.selectedYearsInterval[state.selectedYearsInterval.length - 1] + 1}
-            </div>
-          </div>
-        )}
+        ))}
       </div>
+      <div className={st.container}>{dayCards}</div>
     </div>
   );
 };
+
+export default Calendar;

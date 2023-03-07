@@ -1,9 +1,12 @@
-import { createDate } from './createDate';
+import { createDate } from "./createDate";
 
-export const getWeekDaysNames = (firstWeekDay: number = 4, locale: string = 'default') => {
+export const getWeekDaysNames = (
+  firstWeekDay: number = 4,
+  locale: string = "default"
+) => {
   const weekDaysNames: {
-    day: ReturnType<typeof createDate>['day'];
-    dayShort: ReturnType<typeof createDate>['dayShort'];
+    day: ReturnType<typeof createDate>["day"];
+    dayShort: ReturnType<typeof createDate>["dayShort"];
   }[] = Array.from({ length: 7 });
 
   const date = new Date();
@@ -11,11 +14,14 @@ export const getWeekDaysNames = (firstWeekDay: number = 4, locale: string = 'def
   weekDaysNames.forEach((_, i) => {
     const { day, dayNumberInWeek, dayShort } = createDate({
       locale,
-      date: new Date(date.getFullYear(), date.getMonth(), date.getDate() + i)
+      date: new Date(date.getFullYear(), date.getMonth(), date.getDate() + i),
     });
 
     weekDaysNames[dayNumberInWeek - 1] = { day, dayShort };
   });
 
-  return [...weekDaysNames.slice(firstWeekDay - 1), ...weekDaysNames.slice(0, firstWeekDay - 1)];
+  return [
+    ...weekDaysNames.slice(firstWeekDay - 1),
+    ...weekDaysNames.slice(0, firstWeekDay - 1),
+  ];
 };
